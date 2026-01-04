@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Gold Tower Defense – FULL</title>
+<style>
+body{margin:0;background:#1b1b1b;color:#fff;font-family:Arial;text-align:center}
+#ui{padding:8px;background:#111;position:sticky;top:0}
+button{margin:3px;padding:6px 10px;cursor:pointer;border-radius:6px;border:none}
+canvas{background:#2a2a2a;display:block;margin:0 auto}
+</style>
+</head>
+<body>
+
+<div id="ui">
+💰 <span id="gold">300</span>
+❤️ <span id="hp">30</span>
+🌊 Wave: <span id="wave">1</span><br>
+<button onclick="selectTower('basic')">🔵 Cơ bản (50)</button>
+<button onclick="selectTower('fast')">🟢 Nhanh (80)</button>
+<button onclick="selectTower('slow')">❄️ Đóng băng (100)</button>
+<button onclick="selectTower('heavy')">🟣 Mạnh (140)</button>
+</div>
+
+<canvas id="game" width="800" height="420"></canvas>
+
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+let gold=300,hp=30,wave=1;
+let enemies=[],towers=[];
+let selectedTower='basic';
+const pathY=210;
+
+class Enemy{
+ constructor(hp,speed,isBoss=false){this.x=0;this.y=pathY;this.hp=hp;this.maxHp=hp;this.speed=speed;this.slow=0;this.isBoss=isBoss}
+ update(){let s=this.slow>0?this.speed*0.4:this.speed;this.x+=s;if(this.slow>0)this.slow--;if(this.x>800){hp--;this.hp=0}}
+ draw(){ctx.fillStyle=this.isBoss?'orange':'red';ctx.fillRect(this.x-12,this.y-12,24,24);
+ ctx.fillStyle='green';ctx.fillRect(this.x-12,this.y-18,24*(this.hp/this.maxHp),4)}
+}
+
+class Tower{
+ constructor(x,y,type){this.x=x;this.y=y;this.type=type;this.cool=0;this.level=1;
+ if(type==='basic'){this.range=90;this.dmg=10;this.rate=25}
+ if(type==='fast'){this.range=80;this.dmg=6;this.rate=8}
+ if(type==='slow'){this.range=85;this.dmg=5;this.rate=30}
+ if(type==='heavy'){this.range=120;this.dmg=30;this.rate=45}}
+ update(){if(this.cool>0)this.cool--;enemies.forEach(e=>{let d=Math.hypot(this.x-e.x,this.y-e.y);
+ if(d<this.range&&this.cool===0){e.hp-=this.dmg*this.level; if(this.type==='slow')e.slow=60; this.cool=this.rate; if(e.hp<=0)gold+=e.isBoss?50:10}})}
+ draw(){ctx.fillStyle=this.type==='basic'?'cyan':this.type==='fast'?'lime':this.type==='slow'?'aqua':'violet';
+ ctx.beginPath();ctx.arc(this.x,this.y,10+this.level,0,Math.PI*2);ctx.fill()}
+}
+
+function spawnWave(){
+ let count=5+wave;
+ for(let i=0;i<count;i++)setTimeout(()=>enemies.push(new Enemy(30+wave*6,1+wave*0.15)),i*700);
+ if(wave%5===0)setTimeout(()=>enemies.push(new Enemy(200+wave*20,0.8,true)),count*700)
+}
+spawnWave();
+
+canvas.addEventListener('click',e=>{
+ let cost={basic:50,fast:80,slow:100,heavy:140}[selectedTower];
+ if(gold>=cost){towers.push(new Tower(e.offsetX,e.offsetY,selectedTower));gold-=cost}}
+);
+
+function selectTower(t){selectedTower=t}
+
+function loop(){
+ ctx.clearRect(0,0,800,420);
+ ctx.strokeStyle='yellow';ctx.beginPath();ctx.moveTo(0,pathY);ctx.lineTo(800,pathY);ctx.stroke();
+ enemies=enemies.filter(e=>e.hp>0);
+ enemies.forEach(e=>{e.update();e.draw()});
+ towers.forEach(t=>{t.update();t.draw()});
+ document.getElementById('gold').innerText=gold;
+ document.getElementById('hp').innerText=hp;
+ document.getElementById('wave').innerText=wave;
+ if(enemies.length===0){wave++;spawnWave()}
+ if(hp<=0){alert('GAME OVER');location.reload()}
+ requestAnimationFrame(loop)}
+loop();
+</script>
+
+</body>
+</html>
